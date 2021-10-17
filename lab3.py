@@ -24,6 +24,7 @@ from importlib import reload
 from labfuns import *
 import random
 import math
+import time
 
 
 # ## Bayes classifier functions to implement
@@ -92,31 +93,32 @@ def classifyBayes(X, prior, mu, sigma):
     logProb = np.zeros((Nclasses, Npts))
 
     # USING LOOPS:
+    # start_time = time.time()
     # for i in range(Npts):
     #     for j in range(Nclasses):
     #         A = (X[i]-mu[j])
     #         B = np.reciprocal(sigma[j], where= (sigma[j]!=0))  #this makes 0 entries be 1.123e-303, maybe too much storage
     #         C = (X[i]-mu[j]).T
     #         if i<5:
-    #             print('i,j,prod', i,j,A.dot(B))
+    #             #print('i,j,prod', i,j,A.dot(B))
+    #             pass
     #         logProb[j,i] = -0.5*math.log(np.linalg.det(sigma[j]))  + math.log(prior[j]) - 0.5*A.dot(B).dot(C)
 
     # WITHOUT LOOPS
+    #start_time = time.time()
     for j in range(Nclasses):
         Amat = X - mu[j]
         Aflat = np.reshape(Amat, (Npts*Ndims,1))
-        B = np.reciprocal(sigma[j], where=(sigma[j]!=0))
-        B = np.kron(np.eye(Npts,dtype=float),B)
-
+        B = [np.reciprocal(sigma[j], where=(sigma[j]!=0))]*Npts
+        #B = np.kron(np.eye(Npts,dtype=float),B) #THIS IS SUPER SLOW
+        Bdiag = scipy.linalg.block_diag(*B)
         C = [np.reshape(x, (1,Ndims))  for x in Amat.tolist()]
-        C = scipy.linalg.block_diag(*C)
-
-
-        logProb[j] = -0.5*math.log(np.linalg.det(sigma[j]))*np.ones((1,Npts)) + math.log(prior[j])*np.ones((1,Npts)) - 0.5*np.matmul(C,B.dot(Aflat)).T
-        pass
-
+        D = scipy.linalg.block_diag(*C)
+        logProb[j] = -0.5*math.log(np.linalg.det(sigma[j]))*np.ones((1,Npts)) + math.log(prior[j])*np.ones((1,Npts)) - 0.5*np.matmul(D,Bdiag.dot(Aflat)).T
+        
     h = np.argmax(logProb,axis=0)
     #print(h)
+    #print("--- %s seconds ---" % (time.time() - start_time))
     return h
 
 
@@ -154,15 +156,16 @@ class BayesClassifier(object):
 # Call the `testClassifier` and `plotBoundary` functions for this part.
 
 
-testClassifier(BayesClassifier(), dataset='iris', split=0.7, ntrials=100)
+#testClassifier(BayesClassifier(), dataset='iris', split=0.7, ntrials=100)
 
 
 
-#testClassifier(BayesClassifier(), dataset='vowel', split=0.7, ntrials=100)
+testClassifier(BayesClassifier(), dataset='vowel', split=0.7, ntrials=100)
 
 
 
 #plotBoundary(BayesClassifier(), dataset='iris',split=0.7)
+
 
 
 # ## Boosting functions to implement

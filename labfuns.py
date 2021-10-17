@@ -1,3 +1,5 @@
+# flake8: noqa
+
 from __future__ import absolute_import, division, print_function
 import numpy as np
 from numpy import genfromtxt
@@ -181,7 +183,7 @@ def testClassifier(classifier, dataset='iris', dim=0, split=0.7, ntrials=100):
 
     for trial in range(ntrials):
 
-        xTr,yTr,xTe,yTe,trIdx,teIdx = trteSplitEven(X,y,split,trial)
+        xTr,yTr,xTe,yTe,trIdx,teIdx = trteSplitEven(X,y,split)
 
         # Do PCA replace default value if user provides it
         if dim > 0:
@@ -215,7 +217,7 @@ def testClassifier(classifier, dataset='iris', dim=0, split=0.7, ntrials=100):
 def plotBoundary(classifier, dataset='iris', split=0.7):
 
     X,y,pcadim = fetchDataset(dataset)
-    xTr,yTr,xTe,yTe,trIdx,teIdx = trteSplitEven(X,y,split,1)
+    xTr,yTr,xTe,yTe,trIdx,teIdx = trteSplitEven(X,y,split)
     classes = np.unique(y)
 
     pca = decomposition.PCA(n_components=2)
@@ -245,7 +247,7 @@ def plotBoundary(classifier, dataset='iris', split=0.7):
     colormap = cm.rainbow(np.linspace(0, 1, len(ys)))
 
     fig = plt.figure()
-    plt.hold(True)
+    #plt.hold(True)
     conv = ColorConverter()
     for (color, c) in zip(colormap, classes):
         try:
