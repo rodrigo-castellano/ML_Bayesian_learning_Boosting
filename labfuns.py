@@ -131,7 +131,7 @@ def fetchDataset(dataset='iris'):
 
 
 def genBlobs(n_samples=200,centers=5,n_features=2):
-    X, y = make_blobs(n_samples=n_samples, centers=centers, n_features=n_features,random_state=1)
+    X, y = make_blobs(n_samples=n_samples, centers=centers, n_features=n_features,random_state=0)
     return X,y
 
 
@@ -201,6 +201,7 @@ def testClassifier(classifier, dataset='iris', dim=0, split=0.7, ntrials=100):
         # Compute classification error
         if trial % 10 == 0:
             print("Trial:",trial,"Accuracy","%.3g" % (100*np.mean((yPr==yTe).astype(float))) )
+            pass
 
         means[trial] = 100*np.mean((yPr==yTe).astype(float))
 
@@ -244,7 +245,7 @@ def plotBoundary(classifier, dataset='iris', split=0.7):
     colormap = cm.rainbow(np.linspace(0, 1, len(ys)))
 
     fig = plt.figure()
-    # plt.hold(True)
+    plt.hold(True)
     conv = ColorConverter()
     for (color, c) in zip(colormap, classes):
         try:

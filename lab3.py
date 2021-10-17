@@ -114,9 +114,9 @@ def classifyBayes(X, prior, mu, sigma):
 
         logProb[j] = -0.5*math.log(np.linalg.det(sigma[j]))*np.ones((1,Npts)) + math.log(prior[j])*np.ones((1,Npts)) - 0.5*np.matmul(C,B.dot(Aflat)).T
         pass
-        
+
     h = np.argmax(logProb,axis=0)
-    print(h)
+    #print(h)
     return h
 
 
@@ -142,23 +142,23 @@ class BayesClassifier(object):
 # ## Test the Maximum Likelihood estimates
 # 
 # Call `genBlobs` and `plotGaussian` to verify your estimates.
-X, labels = genBlobs(centers=5)
+#X, labels = genBlobs(centers=5)
 
-mu, sigma = mlParams(X,labels)
+#mu, sigma = mlParams(X,labels)
 
 #plotGaussian(X,labels,mu,sigma)
 
-prior = computePrior(labels)
-classifyBayes(X, prior, mu, sigma)
+#prior = computePrior(labels)
+#classifyBayes(X, prior, mu, sigma)
 
 # Call the `testClassifier` and `plotBoundary` functions for this part.
 
 
-#testClassifier(BayesClassifier(), dataset='iris', split=0.7)
+testClassifier(BayesClassifier(), dataset='iris', split=0.7, ntrials=100)
 
 
 
-#testClassifier(BayesClassifier(), dataset='vowel', split=0.7)
+#testClassifier(BayesClassifier(), dataset='vowel', split=0.7, ntrials=100)
 
 
 
