@@ -45,11 +45,15 @@ def computePrior(labels, W=None):
     Nclasses = np.size(classes)
 
     prior = np.zeros((Nclasses,1))
+    prior_w = np.zeros((Nclasses,1))
+
     for i in range(Nclasses):
         length = len(np.where(labels == i)[0])
         prior[i] = length/Npts
+        pos = np.where(labels == i)[0]
+        prior_w[i] = W[pos].sum(axis=0,dtype='float')/W.sum(axis=0,dtype='float')
 
-    return prior
+    return prior_w
 
 # NOTE: you do not need to handle the W argument for this part!
 # in:      X - N x d matrix of N data points
@@ -65,21 +69,27 @@ def mlParams(X, labels, W=None):
     if W is None:
         W = np.ones((Npts,1))/float(Npts)
 
-    mu = np.zeros((Nclasses,Ndims))
-    sigma = np.zeros((Nclasses,Ndims,Ndims))
+    #mu = np.zeros((Nclasses,Ndims))
+    mu_w = np.zeros((Nclasses,Ndims))
+    #sigma = np.zeros((Nclasses,Ndims,Ndims))
+    sigma_w = np.zeros((Nclasses,Ndims,Ndims))
 
     for i in range(Nclasses):
         # For each class, sum all the points from that class and divide them by the number of points of that class
         pos = np.where(labels == i)[0]
         length = len(np.where(labels == i)[0])
 
-        mu[i] = X[pos].sum(axis=0,dtype='float')/length
+        #mu[i] = X[pos].sum(axis=0,dtype='float')/length
+        mu_w[i] = (W[pos]*X[pos]).sum(axis=0,dtype='float')/W[pos].sum(axis=0,dtype='float')
         
-        diag = (X[pos]-mu[i])**2
-        diag = diag.sum(axis=0,dtype='float')/length
-        np.fill_diagonal(sigma[i],diag)              
+        #diag = (X[pos]-mu[i])**2
+        #diag = diag.sum(axis=0,dtype='float')/length
+        #np.fill_diagonal(sigma[i],diag)  
+        diag_w = W[pos]*((X[pos]-mu_w[i])**2)
+        diag_w = diag_w.sum(axis=0,dtype='float')/W[pos].sum(axis=0,dtype='float')
+        np.fill_diagonal(sigma_w[i],diag_w)              
 
-    return mu, sigma
+    return mu_w, sigma_w
 
 # in:      X - N x d matrix of M data points
 #      prior - C x 1 matrix of class priors
@@ -87,38 +97,44 @@ def mlParams(X, labels, W=None):
 #      sigma - C x d x d matrix of class covariances (sigma[i] - class i sigma)
 # out:     h - N vector of class predictions for test points
 def classifyBayes(X, prior, mu, sigma):
-    
+
     Npts = X.shape[0]
     Nclasses,Ndims = np.shape(mu)
     logProb = np.zeros((Nclasses, Npts))
 
     # USING LOOPS:
-    # start_time = time.time()
-    # for i in range(Npts):
-    #     for j in range(Nclasses):
-    #         A = (X[i]-mu[j])
-    #         B = np.reciprocal(sigma[j], where= (sigma[j]!=0))  #this makes 0 entries be 1.123e-303, maybe too much storage
-    #         C = (X[i]-mu[j]).T
-    #         if i<5:
-    #             #print('i,j,prod', i,j,A.dot(B))
-    #             pass
-    #         logProb[j,i] = -0.5*math.log(np.linalg.det(sigma[j]))  + math.log(prior[j]) - 0.5*A.dot(B).dot(C)
+    #start_time = time.time()
+    for i in range(Npts):
+        for j in range(Nclasses):
+            A = (X[i]-mu[j])
+            #B = np.reciprocal(sigma[j], where= (sigma[j]!=0))  #this makes 0 entries be 1.123e-303, maybe too much storage
+            #B=np.linalg.inv(sigma[j])
+            # B is the inverse of sigma
+            B = np.zeros((Ndims,Ndims))
+            for n in range(sigma[j].shape[0]):
+                for m in range(sigma[j].shape[1]):
+                    if n==m and sigma[j][n][m]!=0:
+                        B[n][m]= 1/sigma[j][n][m]
+
+            C = (X[i]-mu[j]).T
+            logProb[j,i] = -0.5*math.log(np.linalg.det(sigma[j]))  + math.log(prior[j]) - 0.5*A.dot(B).dot(C)
 
     # WITHOUT LOOPS
-    #start_time = time.time()
-    for j in range(Nclasses):
-        Amat = X - mu[j]
-        Aflat = np.reshape(Amat, (Npts*Ndims,1))
-        B = [np.reciprocal(sigma[j], where=(sigma[j]!=0))]*Npts
-        #B = np.kron(np.eye(Npts,dtype=float),B) #THIS IS SUPER SLOW
-        Bdiag = scipy.linalg.block_diag(*B)
-        C = [np.reshape(x, (1,Ndims))  for x in Amat.tolist()]
-        D = scipy.linalg.block_diag(*C)
-        logProb[j] = -0.5*math.log(np.linalg.det(sigma[j]))*np.ones((1,Npts)) + math.log(prior[j])*np.ones((1,Npts)) - 0.5*np.matmul(D,Bdiag.dot(Aflat)).T
-        
+    # start_time = time.time()
+    # for j in range(Nclasses):
+    #     Amat = X - mu[j]
+    #     Aflat = np.reshape(Amat, (Npts*Ndims,1))
+    #     B = [np.reciprocal(sigma[j], where=(sigma[j]!=0))]*Npts
+    #     #B = np.kron(np.eye(Npts,dtype=float),B) #THIS IS SUPER SLOW
+    #     Bdiag = scipy.linalg.block_diag(*B)
+    #     C = [np.reshape(x, (1,Ndims))  for x in Amat.tolist()]
+    #     D = scipy.linalg.block_diag(*C)
+    #     logProb[j] = -0.5*math.log(np.linalg.det(sigma[j]))*np.ones((1,Npts)) + math.log(prior[j])*np.ones((1,Npts)) - 0.5*np.matmul(D,Bdiag.dot(Aflat)).T
+
     h = np.argmax(logProb,axis=0)
     #print(h)
     #print("--- %s seconds ---" % (time.time() - start_time))
+
     return h
 
 
@@ -144,27 +160,27 @@ class BayesClassifier(object):
 # ## Test the Maximum Likelihood estimates
 # 
 # Call `genBlobs` and `plotGaussian` to verify your estimates.
-#X, labels = genBlobs(centers=5)
-
-#mu, sigma = mlParams(X,labels)
+X, labels = genBlobs(centers=5)
+Npts,Ndims = np.shape(X)
+W = np.ones((Npts,1))/float(Npts)
+mu, sigma = mlParams(X,labels, W)
 
 #plotGaussian(X,labels,mu,sigma)
 
-#prior = computePrior(labels)
+prior = computePrior(labels,W)
 #classifyBayes(X, prior, mu, sigma)
 
 # Call the `testClassifier` and `plotBoundary` functions for this part.
 
+# testClassifier(BayesClassifier(), dataset='iris', split=0.7)
+# plotBoundary(BayesClassifier(), dataset='iris',split=0.7)
 
-#testClassifier(BayesClassifier(), dataset='iris', split=0.7, ntrials=100)
-
-
-
-testClassifier(BayesClassifier(), dataset='vowel', split=0.7, ntrials=100)
-
+#testClassifier(BayesClassifier(), dataset='vowel', split=0.7, ntrials = 100)
+#plotBoundary(BayesClassifier(), dataset='vowel',split=0.7)
 
 
-#plotBoundary(BayesClassifier(), dataset='iris',split=0.7)
+
+
 
 
 
@@ -196,11 +212,20 @@ def trainBoost(base_classifier, X, labels, T=10):
         # do classification for each point
         vote = classifiers[-1].classify(X)
 
-        # TODO: Fill in the rest, construct the alphas etc.
-        # ==========================
-        
-        # alphas.append(alpha) # you will need to append the new alpha
-        # ==========================
+        # Compute the error
+        error = 0#np.ones((Npts,1))
+        #print(vote.shape)
+        for p in range(Npts): #I can do labels==vote and convert from true/flase to 1/0
+            if (labels[p]==vote[p]):
+                delta = 1
+            else:
+                delta = 0
+            error += wCur[p]*(1-delta)
+        if error==0:
+            error = 1.0e-100  
+        alpha = 0.5*(math.log(1-error)-math.log(error))
+        alphas.append(alpha) # you will need to append the new alpha
+
         
     return classifiers, alphas
 
@@ -215,17 +240,18 @@ def classifyBoost(X, classifiers, alphas, Nclasses):
 
     # if we only have one classifier, we may just classify directly
     if Ncomps == 1:
+
         return classifiers[0].classify(X)
     else:
+    
         votes = np.zeros((Npts,Nclasses))
 
-        # TODO: implement classificiation when we have trained several classifiers!
-        # here we can do it by filling in the votes vector with weighted votes
-        # ==========================
-        
-        # ==========================
+        for i in range(Ncomps):
+            pred = classifiers[i].classify(X)
 
-        # one way to compute yPred after accumulating the votes
+            for j in range(Npts):
+                votes[j,pred[j]] +=1
+
         return np.argmax(votes,axis=1)
 
 
@@ -255,7 +281,7 @@ class BoostClassifier(object):
 # Call the `testClassifier` and `plotBoundary` functions for this part.
 
 
-#testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='iris',split=0.7)
+testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='iris',split=0.7)
 
 
 

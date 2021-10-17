@@ -176,19 +176,19 @@ def plotGaussian(X,y,mu,sigma):
 # `fetchDataset` can be provided with any of the dataset arguments `wine`, `iris`, `olivetti` and `vowel`.
 # Observe that we split the data into a **training** and a **testing** set.
 def testClassifier(classifier, dataset='iris', dim=0, split=0.7, ntrials=100):
-
+    
     X,y,pcadim = fetchDataset(dataset)
-
     means = np.zeros(ntrials,);
 
     for trial in range(ntrials):
 
-        xTr,yTr,xTe,yTe,trIdx,teIdx = trteSplitEven(X,y,split)
+        xTr,yTr,xTe,yTe,trIdx,teIdx =  trteSplitEven(X,y,split) #trteSplit(X,y,split, seed = 3)
 
         # Do PCA replace default value if user provides it
         if dim > 0:
             pcadim = dim
 
+        #pcadim = 0 # If you don't want to do PCA, set pcadim to 0
         if pcadim > 0:
             pca = decomposition.PCA(n_components=pcadim)
             pca.fit(xTr)
@@ -202,7 +202,7 @@ def testClassifier(classifier, dataset='iris', dim=0, split=0.7, ntrials=100):
 
         # Compute classification error
         if trial % 10 == 0:
-            print("Trial:",trial,"Accuracy","%.3g" % (100*np.mean((yPr==yTe).astype(float))) )
+            print("Trial:",trial,"Accuracy","%.3g" % (100*np.mean((yPr==yTe).astype(float))))
             pass
 
         means[trial] = 100*np.mean((yPr==yTe).astype(float))
