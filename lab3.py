@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # coding: utf-8
+# flake8: noqa
 
 # # Lab 3: Bayes Classifier and Boosting
 
@@ -17,6 +18,7 @@
 # Check out `labfuns.py` if you are interested in the details.
 
 import numpy as np
+import scipy
 from scipy import misc
 from importlib import reload
 from labfuns import *
@@ -89,47 +91,30 @@ def classifyBayes(X, prior, mu, sigma):
     Nclasses,Ndims = np.shape(mu)
     logProb = np.zeros((Nclasses, Npts))
 
-    for i in range(Npts):
-        for j in range(Nclasses):
-            A = (X[i]-mu[j])
-            B = np.reciprocal(sigma[j], where= (sigma[j]!=0))  #this makes 0 entries be 1.123e-303, maybe too much storage
-            C = (X[i]-mu[j]).T
-            if i<5:
-                print('i,j,prod', i,j,A.dot(B))
-            logProb[j,i] = -0.5*math.log(np.linalg.det(sigma[j]))  + math.log(prior[j]) - 0.5*A.dot(B).dot(C)
+    # USING LOOPS:
+    # for i in range(Npts):
+    #     for j in range(Nclasses):
+    #         A = (X[i]-mu[j])
+    #         B = np.reciprocal(sigma[j], where= (sigma[j]!=0))  #this makes 0 entries be 1.123e-303, maybe too much storage
+    #         C = (X[i]-mu[j]).T
+    #         if i<5:
+    #             print('i,j,prod', i,j,A.dot(B))
+    #         logProb[j,i] = -0.5*math.log(np.linalg.det(sigma[j]))  + math.log(prior[j]) - 0.5*A.dot(B).dot(C)
 
-    # # for i in range(5):
-    # #     for j in range(5):
-    # #         print('logProb[',j,',',i,']', logProb[j,i])
-    # #print('logprob',logProb[:][0])
-    # logprob2 = logProb
-    # Npts = X.shape[0]
-    # Nclasses,Ndims = np.shape(mu)
-    # logProb = np.zeros((Nclasses, Npts))
-    # print('.......................')
-    # for j in range(Nclasses):
-    #     A = (X-mu[j])
-    #     B = np.reciprocal(sigma[j], where= (sigma[j]!=0))  #this makes 0 entries be 1.123e-303, maybe too much storage
-    #     C = (X-mu[j]).T
-    #     D = np.zeros(Npts)
-    #     print('j,prod',j,A.dot(B))
-    #     for k in range(C.shape[1]):
-    #         D[k] = np.sum(np.multiply(A.dot(B)[k,:],A[k,:]))
+    # WITHOUT LOOPS
+    for j in range(Nclasses):
+        Amat = X - mu[j]
+        Aflat = np.reshape(Amat, (Npts*Ndims,1))
+        B = np.reciprocal(sigma[j], where=(sigma[j]!=0))
+        B = np.kron(np.eye(Npts,dtype=float),B)
 
-    #     primero = -0.5*math.log(np.linalg.det(sigma[j]))
-    #     segundo = - 0.5*D
-    #     tercero = + math.log(prior[j])
-    #     # print('primero', primero)
-    #     # print('segundo', segundo)
-    #     # print('tercero', tercero)
-    #     logProb[j] = -0.5*math.log(np.linalg.det(sigma[j])) + math.log(prior[j]) - 0.5*D 
+        C = [np.reshape(x, (1,Ndims))  for x in Amat.tolist()]
+        C = scipy.linalg.block_diag(*C)
 
-    # for i in range(5):
-    #     for j in range(5):
-    #         print('logProb[',j,',',i,']', logProb[j,i])
-    
-    #print('logprob',logProb[:][0])
-    #print(np.where((logprob2 == logProb)==False))
+
+        logProb[j] = -0.5*math.log(np.linalg.det(sigma[j]))*np.ones((1,Npts)) + math.log(prior[j])*np.ones((1,Npts)) - 0.5*np.matmul(C,B.dot(Aflat)).T
+        pass
+        
     h = np.argmax(logProb,axis=0)
     print(h)
     return h

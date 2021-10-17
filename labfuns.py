@@ -131,7 +131,7 @@ def fetchDataset(dataset='iris'):
 
 
 def genBlobs(n_samples=200,centers=5,n_features=2):
-    X, y = make_blobs(n_samples=n_samples, centers=centers, n_features=n_features,random_state=0)
+    X, y = make_blobs(n_samples=n_samples, centers=centers, n_features=n_features,random_state=1)
     return X,y
 
 
