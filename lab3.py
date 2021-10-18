@@ -103,7 +103,6 @@ def classifyBayes(X, prior, mu, sigma):
     logProb = np.zeros((Nclasses, Npts))
 
     # USING LOOPS:
-    #start_time = time.time()
     for i in range(Npts):
         for j in range(Nclasses):
             A = (X[i]-mu[j])
@@ -120,20 +119,25 @@ def classifyBayes(X, prior, mu, sigma):
             logProb[j,i] = -0.5*math.log(np.linalg.det(sigma[j]))  + math.log(prior[j]) - 0.5*A.dot(B).dot(C)
 
     # WITHOUT LOOPS
-    # start_time = time.time()
     # for j in range(Nclasses):
-    #     Amat = X - mu[j]
-    #     Aflat = np.reshape(Amat, (Npts*Ndims,1))
-    #     B = [np.reciprocal(sigma[j], where=(sigma[j]!=0))]*Npts
-    #     #B = np.kron(np.eye(Npts,dtype=float),B) #THIS IS SUPER SLOW
-    #     Bdiag = scipy.linalg.block_diag(*B)
-    #     C = [np.reshape(x, (1,Ndims))  for x in Amat.tolist()]
-    #     D = scipy.linalg.block_diag(*C)
-    #     logProb[j] = -0.5*math.log(np.linalg.det(sigma[j]))*np.ones((1,Npts)) + math.log(prior[j])*np.ones((1,Npts)) - 0.5*np.matmul(D,Bdiag.dot(Aflat)).T
+        # Amat = X - mu[j]
+        # Aflat = np.reshape(Amat, (Npts*Ndims,1))
+        # #B = [np.reciprocal(sigma[j], where=(sigma[j]!=0))]*Npts
+        # B = np.zeros((Ndims,Ndims))
+        # for n in range(sigma[j].shape[0]):
+        #     for m in range(sigma[j].shape[1]):
+        #         if n==m and sigma[j][n][m]!=0:
+        #             B[n][m]= 1/sigma[j][n][m]
+        # B = [B]*Npts
+        # #B = np.kron(np.eye(Npts,dtype=float),B) #THIS IS SUPER SLOW
+        # Bdiag = scipy.linalg.block_diag(*B)
+        # C = [np.reshape(x, (1,Ndims))  for x in Amat.tolist()]
+        # D = scipy.linalg.block_diag(*C)
+        # logProb[j] = -0.5*math.log(np.linalg.det(sigma[j]))*np.ones((1,Npts)) + math.log(prior[j])*np.ones((1,Npts)) - 0.5*np.matmul(D,Bdiag.dot(Aflat)).T
 
     h = np.argmax(logProb,axis=0)
     #print(h)
-    #print("--- %s seconds ---" % (time.time() - start_time))
+    
 
     return h
 
@@ -160,22 +164,21 @@ class BayesClassifier(object):
 # ## Test the Maximum Likelihood estimates
 # 
 # Call `genBlobs` and `plotGaussian` to verify your estimates.
-X, labels = genBlobs(centers=5)
-Npts,Ndims = np.shape(X)
-W = np.ones((Npts,1))/float(Npts)
-mu, sigma = mlParams(X,labels, W)
+#X, labels = genBlobs(centers=5)
+#Npts,Ndims = np.shape(X)
+#W = np.ones((Npts,1))/float(Npts)
+#mu, sigma = mlParams(X,labels, W)
 
 #plotGaussian(X,labels,mu,sigma)
 
-prior = computePrior(labels,W)
+#prior = computePrior(labels,W)
 #classifyBayes(X, prior, mu, sigma)
 
 # Call the `testClassifier` and `plotBoundary` functions for this part.
+testClassifier(BayesClassifier(), dataset='iris', split=0.7, ntrials=1000)
+#plotBoundary(DecisionTreeClassifier(), dataset='iris',split=0.7)
 
-# testClassifier(BayesClassifier(), dataset='iris', split=0.7)
-# plotBoundary(BayesClassifier(), dataset='iris',split=0.7)
-
-#testClassifier(BayesClassifier(), dataset='vowel', split=0.7, ntrials = 100)
+#testClassifier(BayesClassifier(), dataset='vowel', split=0.7, ntrials = 1000)
 #plotBoundary(BayesClassifier(), dataset='vowel',split=0.7)
 
 
@@ -226,6 +229,13 @@ def trainBoost(base_classifier, X, labels, T=10):
         alpha = 0.5*(math.log(1-error)-math.log(error))
         alphas.append(alpha) # you will need to append the new alpha
 
+        for i, w in enumerate(wCur):
+            if labels[i] == vote[i]:
+                wCur[i] = wCur[i] * np.exp(- alpha)
+            else:
+                wCur[i] = wCur[i] * np.exp(alpha)
+        wCur = wCur / np.sum(wCur)
+
         
     return classifiers, alphas
 
@@ -240,7 +250,6 @@ def classifyBoost(X, classifiers, alphas, Nclasses):
 
     # if we only have one classifier, we may just classify directly
     if Ncomps == 1:
-
         return classifiers[0].classify(X)
     else:
     
@@ -251,8 +260,7 @@ def classifyBoost(X, classifiers, alphas, Nclasses):
 
             for j in range(Npts):
                 votes[j,pred[j]] +=1
-
-        return np.argmax(votes,axis=1)
+    return np.argmax(votes,axis=1)
 
 
 # The implemented functions can now be summarized another classifer, the `BoostClassifier` class. This class enables boosting different types of classifiers by initializing it with the `base_classifier` argument. No need to add anything here.
@@ -281,15 +289,15 @@ class BoostClassifier(object):
 # Call the `testClassifier` and `plotBoundary` functions for this part.
 
 
-testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='iris',split=0.7)
+#testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='iris',split=0.7)
 
 
 
-#testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='vowel',split=0.7)
+#testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='vowel',split=0.7, ntrials=10)
 
 
 
-#plotBoundary(BoostClassifier(BayesClassifier()), dataset='iris',split=0.7)
+#plotBoundary(BoostClassifier(DecisionTreeClassifier()), dataset='iris',split=0.7)
 
 
 # Now repeat the steps with a decision tree classifier.
@@ -316,6 +324,16 @@ testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='iris',split=0.
 
 
 #plotBoundary(BoostClassifier(DecisionTreeClassifier(), T=10), dataset='iris',split=0.7)
+
+
+
+
+
+
+
+
+
+
 
 
 # ## Bonus: Visualize faces classified using boosted decision trees
