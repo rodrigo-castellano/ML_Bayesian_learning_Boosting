@@ -108,7 +108,7 @@ def classifyBayes(X, prior, mu, sigma):
             A = (X[i]-mu[j])
             #B = np.reciprocal(sigma[j], where= (sigma[j]!=0))  #this makes 0 entries be 1.123e-303, maybe too much storage
             #B=np.linalg.inv(sigma[j])
-            # B is the inverse of sigma
+            # B is the zerse of sigma
             B = np.zeros((Ndims,Ndims))
             for n in range(sigma[j].shape[0]):
                 for m in range(sigma[j].shape[1]):
@@ -175,10 +175,10 @@ class BayesClassifier(object):
 #classifyBayes(X, prior, mu, sigma)
 
 # Call the `testClassifier` and `plotBoundary` functions for this part.
-testClassifier(BayesClassifier(), dataset='iris', split=0.7, ntrials=1000)
+#testClassifier(BayesClassifier(), dataset='iris', split=0.7, ntrials=100)
 #plotBoundary(DecisionTreeClassifier(), dataset='iris',split=0.7)
 
-#testClassifier(BayesClassifier(), dataset='vowel', split=0.7, ntrials = 1000)
+#testClassifier(BayesClassifier(), dataset='vowel', split=0.7, ntrials = 100)
 #plotBoundary(BayesClassifier(), dataset='vowel',split=0.7)
 
 
@@ -293,11 +293,11 @@ class BoostClassifier(object):
 
 
 
-#testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='vowel',split=0.7, ntrials=10)
+#testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='vowel',split=0.7)
 
 
 
-#plotBoundary(BoostClassifier(DecisionTreeClassifier()), dataset='iris',split=0.7)
+#plotBoundary(BoostClassifier(BayesClassifier(), T=50), dataset='iris',split=0.7)
 
 
 # Now repeat the steps with a decision tree classifier.
@@ -323,7 +323,7 @@ class BoostClassifier(object):
 
 
 
-#plotBoundary(BoostClassifier(DecisionTreeClassifier(), T=10), dataset='iris',split=0.7)
+plotBoundary(BoostClassifier(DecisionTreeClassifier(), T=100), dataset='iris',split=0.7)
 
 
 
